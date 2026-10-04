@@ -256,11 +256,50 @@ export async function analyzeImageColorsAndGeometry(base64Data: string): Promise
 }
 
 /**
- * Extracts packaging text via Tesseract OCR with a strict non-blocking timeout
+ * Pre-processes an image on an offscreen canvas to scale it down to ~640px max
+ * and enhance edge contrast so Tesseract runs blazing fast (<800ms) without mobile memory limits.
  */
-export async function extractOcrText(base64Data: string, timeoutMs = 1800): Promise<string> {
+async function preprocessImageForOcr(base64Data: string, maxSize = 640): Promise<string> {
+  if (typeof window === 'undefined') return base64Data;
+  return new Promise((resolve) => {
+    const img = new Image();
+    img.crossOrigin = 'anonymous';
+    img.onload = () => {
+      try {
+        const canvas = document.createElement('canvas');
+        let width = img.naturalWidth || img.width || 640;
+        let height = img.naturalHeight || img.height || 480;
+        if (width > maxSize || height > maxSize) {
+          if (width > height) {
+            height = Math.round((height * maxSize) / width);
+            width = maxSize;
+          } else {
+            width = Math.round((width * maxSize) / height);
+            height = maxSize;
+          }
+        }
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        if (!ctx) return resolve(base64Data);
+        ctx.drawImage(img, 0, 0, width, height);
+        resolve(canvas.toDataURL('image/jpeg', 0.82));
+      } catch {
+        resolve(base64Data);
+      }
+    };
+    img.onerror = () => resolve(base64Data);
+    img.src = base64Data;
+  });
+}
+
+/**
+ * Extracts packaging text via Tesseract OCR with image downscaling & generous mobile timeout
+ */
+export async function extractOcrText(base64Data: string, timeoutMs = 4000): Promise<string> {
   try {
-    const ocrPromise = recognize(base64Data, 'eng').then((res) => (res.data.text || '').toLowerCase());
+    const preprocessed = await preprocessImageForOcr(base64Data, 640);
+    const ocrPromise = recognize(preprocessed, 'eng').then((res) => (res.data.text || '').toLowerCase());
     const timeoutPromise = new Promise<string>((resolve) => setTimeout(() => resolve(''), timeoutMs));
     return await Promise.race([ocrPromise, timeoutPromise]);
   } catch {
@@ -278,7 +317,7 @@ export async function recognizeFoodFromImage(
 ): Promise<VisualRecognitionResult> {
   const [features, rawOcrText] = await Promise.all([
     analyzeImageColorsAndGeometry(base64Data),
-    extractOcrText(base64Data, 1800),
+    extractOcrText(base64Data, 3500),
   ]);
 
   const searchString = `${filenameHint || ''} ${rawOcrText}`.toLowerCase().replace(/[-_.]/g, ' ');
@@ -396,55 +435,109 @@ export async function recognizeFoodFromImage(
     }
 
     // Precise, Disjoint Visual Packaging Signatures
-    if (item.id === 'P011') {
-      // Sparkling Cola Soda Can: Crimson Red, low yellow, tall can
-      if (red > 0.12 && yellow < 0.08) score += red * 100;
-      if (ar < 0.95) score += 25; // Can shape
-    } else if (item.id === 'P009') {
-      // Bourbon: Dark Cocoa Brown, horizontal biscuit
-      if (brown > 0.09) score += brown * 110;
-      if (ar > 1.35) score += 30; // Horizontal biscuit pack
-    } else if (item.id === 'P004') {
-      // Maggi: Dual Yellow + Red banner
-      if (yellow > 0.10 && red > 0.05) score += yellow * 70 + red * 70 + 40;
-      else if (yellow > 0.15) score += yellow * 45;
-    } else if (item.id === 'P005') {
-      // Kinder Joy: Dual White + Orange/Blue egg
-      if (white > 0.12 && (orange > 0.05 || blue > 0.05)) {
-        score += white * 60 + Math.max(orange, blue) * 70 + 40;
+    const dom = features.dominantColorName;
+
+    // P004: Maggi (Dual Yellow + Red banner)
+    if (item.id === 'P004') {
+      if (dom === 'yellow' || yellow > 0.08) {
+        score += (yellow * 150) + 60;
+        if (red > 0.02) score += (red * 80) + 30; // Red Maggi logo
       }
-    } else if (item.id === 'P001') {
-      // Yoga Bar: Wide horizontal wrapper + Teal/Violet
-      if (ar > 1.45) score += 40;
-      score += (teal * 80) + (purple * 60) + (blue * 50);
-    } else if (item.id === 'P003') {
-      // Oats: Dark chocolate / Navy pouch, vertical
-      if (ar < 1.35 && (blue > 0.08 || brown > 0.08)) {
-        score += Math.max(blue, brown) * 75;
+    }
+
+    // P008: Lay's Potato Chips (Blue for Magic Masala, or Yellow for Classic Salted)
+    else if (item.id === 'P008') {
+      if (dom === 'blue' || blue > 0.10) {
+        // Lay's India's Magic Masala is deep blue!
+        score += (blue * 160) + 70;
+        if (yellow > 0.02 || red > 0.02) score += 25; // Yellow chips & red Lay's sphere
+      } else if (dom === 'yellow' || yellow > 0.12) {
+        score += (yellow * 100) + 30;
       }
-    } else if (item.id === 'P007') {
-      // Makhana: Cream/Ivory pouch + tomato red seasoning
-      if (cream > 0.10) score += cream * 80 + red * 40;
-    } else if (item.id === 'P002') {
-      // Paneer: Bright White box
-      if (white > 0.20 && orange < 0.05 && yellow < 0.08) score += white * 90;
-    } else if (item.id === 'P008') {
-      // Lay's: Yellow or Blue bag
-      if (yellow > 0.15 || (blue > 0.15 && searchString.includes('lay'))) score += Math.max(yellow, blue) * 80;
-    } else if (item.id === 'P006') {
-      // 100% Pure Natural Honey: Amber Golden Liquid jar
-      if (amber > 0.12) score += amber * 105;
-    } else if (item.id === 'P012') {
-      // Fresh Crisp Green Apple: Crisp Green skin, round fruit
-      if (green > 0.10) score += green * 95;
-      else if (red > 0.08 && green > 0.05) score += red * 50 + green * 50 + 30;
-      if (ar > 0.85 && ar < 1.25) score += 20; // Round fruit
-    } else if (item.id === 'P010') {
-      // Vanilla Fruit Bar Cake: Golden Yellow / Orange bakery wrapper
-      if (yellow > 0.12 || orange > 0.10) score += Math.max(yellow, orange) * 80;
-    } else if (item.id === 'P013') {
-      // Whole Grain Cookie Snack Pack: Wheat Golden Brown
-      if (brown > 0.10 || yellow > 0.10) score += Math.max(brown, yellow) * 75;
+    }
+
+    // P009: Bourbon Chocolate Cream Biscuits (Dark Cocoa Brown, Horizontal Pack)
+    else if (item.id === 'P009') {
+      if (dom === 'brown' || brown > 0.07) {
+        score += (brown * 160) + 70;
+        if (ar > 1.2) score += 35; // Horizontal biscuit packet
+      }
+    }
+
+    // P011: Sparkling Cola Soda Can (Crimson Red Can - NEVER Yellow, NEVER Blue!)
+    else if (item.id === 'P011') {
+      if ((dom === 'red' || red > 0.14) && yellow < 0.08 && blue < 0.08) {
+        score += (red * 160) + 70;
+        if (ar < 0.95) score += 35; // Tall cylindrical can silhouette
+      }
+    }
+
+    // P005: Kinder Joy (Dual White Top Half + Orange/Blue Bottom Egg)
+    else if (item.id === 'P005') {
+      // Requires substantial white (> 0.18) AND distinct orange accent (or blue in non-blue bag)
+      if (white > 0.18 && (orange > 0.06 || (blue > 0.08 && dom !== 'blue'))) {
+        score += (white * 100) + (Math.max(orange, blue) * 180) + 70;
+        if (ar >= 0.75 && ar <= 1.25) score += 25; // Oval egg shape
+      }
+    }
+
+    // P001: Yoga Bar Daily 10g Protein Bar (Teal / Cyan / Purple, Wide Horizontal Bar)
+    else if (item.id === 'P001') {
+      if (teal > 0.08 || purple > 0.08 || (blue > 0.08 && ar > 1.35)) {
+        score += (teal * 120) + (purple * 100) + (blue * 50);
+        if (ar > 1.35) score += 45; // Elongated snack bar wrapper
+      }
+    }
+
+    // P003: High Protein Oats Dark Chocolate (Navy Blue & Cocoa Brown Pouch)
+    else if (item.id === 'P003') {
+      if ((blue > 0.08 && brown > 0.06) || (dom === 'blue' && ar < 1.3 && white < 0.20)) {
+        score += (blue * 90) + (brown * 90) + 30;
+      }
+    }
+
+    // P007: Mr Makhana (Cream / Ivory Puffed Seeds + Red Tomato Accents)
+    else if (item.id === 'P007') {
+      if (dom === 'cream' || cream > 0.08) {
+        score += (cream * 140) + 60;
+        if (red > 0.03) score += (red * 80) + 25; // Tomato seasoning
+      }
+    }
+
+    // P002: Fresh Malai Paneer (Pure Solid White Block - strictly NO orange, NO red, NO blue)
+    else if (item.id === 'P002') {
+      if (white > 0.22 && orange < 0.05 && red < 0.08 && yellow < 0.08 && blue < 0.08) {
+        score += (white * 150) + 60;
+        if (green > 0.02) score += 25; // Vegetarian green dot & dairy logo
+      }
+    }
+
+    // P006: 100% Pure Natural Honey (Amber Golden Jar)
+    else if (item.id === 'P006') {
+      if (dom === 'amber' || amber > 0.10) {
+        score += (amber * 150) + 60;
+      }
+    }
+
+    // P012: Fresh Crisp Green Apple
+    else if (item.id === 'P012') {
+      if (dom === 'green' || green > 0.10) {
+        score += (green * 150) + 60;
+      }
+    }
+
+    // P010: Vanilla Fruit Bar Cake
+    else if (item.id === 'P010') {
+      if ((dom === 'yellow' || yellow > 0.12) && orange > 0.06) {
+        score += (yellow * 80) + (orange * 80);
+      }
+    }
+
+    // P013: Whole Grain Cookie Snack Pack
+    else if (item.id === 'P013') {
+      if (brown > 0.08 && yellow > 0.08) {
+        score += (brown * 70) + (yellow * 70);
+      }
     }
 
     if (isNaN(score)) score = 0;

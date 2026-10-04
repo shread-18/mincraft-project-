@@ -196,6 +196,8 @@ export const ARFoodScanner: React.FC<ARFoodScannerProps> = ({
     try {
       setAnalysisError(null);
       setIsCameraReady(false);
+      setHasScannedProduct(false);
+      setCustomImage(null);
       const dimensions = { width: { ideal: 1280 }, height: { ideal: 720 } };
       let stream: MediaStream;
       try {
@@ -279,6 +281,9 @@ export const ARFoodScanner: React.FC<ARFoodScannerProps> = ({
 
   // Auto-start camera when scanner screen opens
   useEffect(() => {
+    setHasScannedProduct(false);
+    setCustomImage(null);
+    setAnalysisError(null);
     void startCamera();
     return () => {
       stopCamera();
@@ -741,8 +746,8 @@ export const ARFoodScanner: React.FC<ARFoodScannerProps> = ({
             </div>
           )}
 
-          {/* Floating AR Holographic Insight Overlays (Shown ONLY after scanning) */}
-          {hasScannedProduct && showAROverlay && !isScanning && (
+          {/* Floating AR Holographic Insight Overlays (Shown ONLY after scanning and NOT while live camera stream is aiming) */}
+          {!isCameraActive && hasScannedProduct && showAROverlay && !isScanning && (
             <div className="absolute inset-0 pointer-events-auto p-4 sm:p-5 z-20 flex flex-col justify-between">
               {/* Top AR Status Bar */}
               <div className="flex items-center justify-between">
@@ -807,7 +812,7 @@ export const ARFoodScanner: React.FC<ARFoodScannerProps> = ({
 
         {/* Real-time Nutritional Breakdown & Action Panel */}
         <div className="lg:col-span-5 flex flex-col justify-between space-y-4">
-          {hasScannedProduct ? (
+          {!isCameraActive && hasScannedProduct ? (
             <FuturisticCard variant="emerald" className="p-5 space-y-4">
               {/* Header info */}
               <div className="flex items-start justify-between">
@@ -987,19 +992,23 @@ export const ARFoodScanner: React.FC<ARFoodScannerProps> = ({
               <div className="flex items-center justify-between">
                 <div>
                   <span className="text-[10px] font-tech font-bold text-slate-400 uppercase tracking-widest">
-                    HUD SENSOR READY
+                    {isCameraActive ? 'HUD SENSOR STREAMING' : 'HUD SENSOR READY'}
                   </span>
                   <h3 className="text-xl font-black text-white font-display mt-0.5">
-                    Packaging Telemetry Standby
+                    {isCameraActive ? 'Live Camera Sensor Active' : 'Packaging Telemetry Standby'}
                   </h3>
                 </div>
-                <StatusBadge status="ready" label="AWAITING SCAN" />
+                <StatusBadge status="ready" label={isCameraActive ? 'AIM & CAPTURE' : 'AWAITING SCAN'} />
               </div>
 
               <div className="p-3.5 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-300 text-xs font-tech leading-relaxed flex items-start gap-2.5">
                 <Sparkles className="w-4 h-4 shrink-0 text-emerald-400 mt-0.5" />
                 <span>
-                  <strong>Data is hidden until packaging is scanned:</strong> Point the camera at a product (Maggi, Bourbon, Coke Can, etc.), upload an image, or tap a sample pack below to unlock nutritional diagnostics.
+                  {isCameraActive ? (
+                    <><strong>Live sensor active:</strong> Position product inside the reticle and tap <strong>📸 SCAN PACKAGING NOW</strong> to extract instant verified diagnostics.</>
+                  ) : (
+                    <><strong>Data is hidden until packaging is scanned:</strong> Point the camera at a product (Maggi, Bourbon, Coke Can, etc.), upload an image, or tap a sample pack below to unlock nutritional diagnostics.</>
+                  )}
                 </span>
               </div>
 
