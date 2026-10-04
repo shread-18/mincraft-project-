@@ -1,16 +1,17 @@
 {
-  "id": "/?source=pwa",
+  "id": "/",
   "name": "FoodLens AI — Smart Food Scanner & Nutrition Intelligence",
   "short_name": "FoodLens",
   "description": "AI-powered food intelligence, package scanning, WHO guidelines, and pediatric health safety platform.",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",
-  "orientation": "portrait",
+  "orientation": "portrait-primary",
   "theme_color": "#0f172a",
   "background_color": "#020617",
   "lang": "en",
   "dir": "ltr",
+  "prefer_related_applications": false,
   "categories": [
     "health",
     "food",
@@ -29,6 +30,12 @@
       "sizes": "192x192",
       "type": "image/png",
       "purpose": "any"
+    },
+    {
+      "src": "/pwa-192x192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "maskable"
     },
     {
       "src": "/pwa-512x512.png",
@@ -52,6 +59,22 @@
       "sizes": "any",
       "type": "image/svg+xml",
       "purpose": "any"
+    }
+  ],
+  "screenshots": [
+    {
+      "src": "/screenshot-wide.png",
+      "sizes": "1280x720",
+      "type": "image/png",
+      "form_factor": "wide",
+      "label": "FoodLens AI Smart Food Intelligence"
+    },
+    {
+      "src": "/screenshot-narrow.png",
+      "sizes": "720x1280",
+      "type": "image/png",
+      "form_factor": "narrow",
+      "label": "FoodLens Mobile Scanner & Health Score"
     }
   ],
   "shortcuts": [
