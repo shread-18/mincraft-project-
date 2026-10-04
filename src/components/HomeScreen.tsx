@@ -16,7 +16,8 @@ import {
   RefreshCw,
   HeartPulse,
   Layers,
-  Activity
+  Activity,
+  Download
 } from 'lucide-react';
 import { FoodItem } from '../types/food';
 import { OFFICIAL_HACKATHON_DATASET } from '../data/foodDataset';
@@ -31,6 +32,7 @@ interface HomeScreenProps {
   onUploadImage: (file: File) => void;
   onSelectQuickProduct: (food: FoodItem) => void;
   onOpenKidsMode: () => void;
+  onOpenPWAModal?: () => void;
 }
 
 export const HomeScreen: React.FC<HomeScreenProps> = ({
@@ -38,6 +40,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
   onUploadImage,
   onSelectQuickProduct,
   onOpenKidsMode,
+  onOpenPWAModal,
 }) => {
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const [heroProductIndex, setHeroProductIndex] = useState<number>(1); // Defaults to Fresh Malai Paneer (score 84)
@@ -109,6 +112,16 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
                 <Swords className="w-4 h-4 text-amber-400" />
                 <span>Play Kids Tummy Bug Battle! 🐛⚡</span>
               </button>
+
+              {onOpenPWAModal && (
+                <button
+                  onClick={onOpenPWAModal}
+                  className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-4 py-3 rounded-2xl bg-gradient-to-r from-emerald-500/15 via-teal-500/15 to-cyan-500/15 hover:from-emerald-500/25 hover:to-cyan-500/25 border border-emerald-400/40 text-emerald-300 font-mono font-bold text-xs sm:text-sm shadow-[0_0_20px_rgba(0,245,160,0.15)] transition-all hover:scale-[1.02] cursor-pointer"
+                >
+                  <Download className="w-4 h-4 text-emerald-400" />
+                  <span>Download App 📲</span>
+                </button>
+              )}
             </div>
 
             <input

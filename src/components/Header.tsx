@@ -11,7 +11,8 @@ import {
   FileText,
   Swords,
   Target,
-  Database
+  Database,
+  Download
 } from 'lucide-react';
 import { ParentalSettings } from '../types/food';
 
@@ -21,6 +22,7 @@ interface HeaderProps {
   parentalSettings: ParentalSettings;
   onOpenParentalModal: () => void;
   onOpenBackupModal: () => void;
+  onOpenPWAModal?: () => void;
   onToggleKidMode: () => void;
   activeTab: 'home' | 'scanner' | 'analysis' | 'kids-battle' | 'goals' | 'catalog';
   onSelectTab: (tab: 'home' | 'scanner' | 'analysis' | 'kids-battle' | 'goals' | 'catalog') => void;
@@ -34,6 +36,7 @@ export const Header: React.FC<HeaderProps> = ({
   parentalSettings,
   onOpenParentalModal,
   onOpenBackupModal,
+  onOpenPWAModal,
   onToggleKidMode,
   activeTab,
   onSelectTab,
@@ -174,6 +177,18 @@ export const Header: React.FC<HeaderProps> = ({
 
           {/* Quick Utility Tools */}
           <div className="flex items-center gap-2">
+            {/* PWA Download / Install Button */}
+            {onOpenPWAModal && (
+              <button
+                onClick={onOpenPWAModal}
+                title="Download / Install FoodLens Native App"
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-gradient-to-r from-emerald-500/20 via-teal-500/20 to-cyan-500/20 text-emerald-300 border border-emerald-500/40 hover:border-emerald-400 hover:text-white transition-all cursor-pointer shadow-[0_0_15px_rgba(0,245,160,0.15)] text-xs font-mono font-bold group"
+              >
+                <Download className="w-3.5 h-3.5 text-emerald-400 group-hover:animate-bounce" />
+                <span className="hidden sm:inline">Download App</span>
+              </button>
+            )}
+
             {/* Kid Mode Switch */}
             <button
               onClick={onToggleKidMode}

@@ -14,11 +14,12 @@ import { DatasetExplorer } from './components/DatasetExplorer';
 import { ParentalControlModal } from './components/ParentalControlModal';
 import { EncryptedBackupModal } from './components/EncryptedBackupModal';
 import { AlgorithmTransparencyModal } from './components/AlgorithmTransparencyModal';
+import { PWAInstallModal } from './components/PWAInstallModal';
 import { FoodItem, ScanHistoryItem, DailySummary, ParentalSettings } from './types/food';
 import { OFFICIAL_HACKATHON_DATASET } from './data/foodDataset';
 import { sounds, requestNotificationPermission, sendLocalNotification } from './utils/notifications';
 import { StatusBadge } from './components/ui/StatusBadge';
-import { ShieldCheck, Cpu, KeyRound, Sparkles, Activity, Database } from 'lucide-react';
+import { ShieldCheck, Cpu, KeyRound, Sparkles, Activity, Database, Download } from 'lucide-react';
 
 const DEFAULT_PARENTAL_SETTINGS: ParentalSettings = {
   isPinLocked: false,
@@ -111,6 +112,7 @@ export default function App() {
   const [isParentalModalOpen, setIsParentalModalOpen] = useState(false);
   const [isBackupModalOpen, setIsBackupModalOpen] = useState(false);
   const [isTransparencyModalOpen, setIsTransparencyModalOpen] = useState(false);
+  const [isPWAModalOpen, setIsPWAModalOpen] = useState(false);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
   // Dark mode effect - ensure dark class is active for futuristic cyber background
@@ -344,6 +346,7 @@ export default function App() {
         parentalSettings={parentalSettings}
         onOpenParentalModal={() => setIsParentalModalOpen(true)}
         onOpenBackupModal={() => setIsBackupModalOpen(true)}
+        onOpenPWAModal={() => setIsPWAModalOpen(true)}
         onToggleKidMode={handleToggleKidMode}
         activeTab={activeTab}
         onSelectTab={setActiveTab}
@@ -374,6 +377,7 @@ export default function App() {
             onUploadImage={handleUploadImage}
             onSelectQuickProduct={handleSelectQuickProduct}
             onOpenKidsMode={() => setActiveTab('kids-battle')}
+            onOpenPWAModal={() => setIsPWAModalOpen(true)}
           />
         )}
 
@@ -476,6 +480,14 @@ export default function App() {
             </button>
             <span className="text-slate-700">|</span>
             <button
+              onClick={() => setIsPWAModalOpen(true)}
+              className="flex items-center gap-1.5 text-slate-400 hover:text-emerald-400 transition-colors cursor-pointer"
+            >
+              <Download className="w-3.5 h-3.5 text-emerald-400" />
+              <span>Download PWA App</span>
+            </button>
+            <span className="text-slate-700">|</span>
+            <button
               onClick={() => setIsTransparencyModalOpen(true)}
               className="flex items-center gap-1.5 text-slate-400 hover:text-emerald-400 transition-colors"
             >
@@ -528,6 +540,11 @@ export default function App() {
       <AlgorithmTransparencyModal
         isOpen={isTransparencyModalOpen}
         onClose={() => setIsTransparencyModalOpen(false)}
+      />
+
+      <PWAInstallModal
+        isOpen={isPWAModalOpen}
+        onClose={() => setIsPWAModalOpen(false)}
       />
     </div>
   );
