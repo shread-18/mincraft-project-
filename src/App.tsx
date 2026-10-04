@@ -203,6 +203,8 @@ export default function App() {
             imageBase64: base64,
             mimeType: file.type || 'image/jpeg',
             queryText: `${queryHint} (Detected packaging: ${recognition.matchedFood.name}, Color tone: ${recognition.colorName})`,
+            visualMatchId: recognition.matchedFood.id,
+            confidence: recognition.confidence,
           }),
         });
 
@@ -236,7 +238,7 @@ export default function App() {
           setActiveFood(parsedFood);
           setActiveTab('analysis');
           sounds.playSuccessChime();
-          setToastMessage(`✓ Recognized: ${parsedFood.name} via ${json.source === 'gemini-2.5-flash' ? 'Gemini AI Vision' : 'FoodLens Image Recognition Engine'}`);
+          setToastMessage(`✓ Identified: ${recognition.summary}`);
           return;
         }
 
@@ -244,7 +246,7 @@ export default function App() {
         setActiveFood(recognition.matchedFood);
         setActiveTab('analysis');
         sounds.playSuccessChime();
-        setToastMessage(`✓ Recognized: ${recognition.matchedFood.name} via On-Device Vision Engine`);
+        setToastMessage(`✓ Identified: ${recognition.summary}`);
       } catch (err) {
         console.warn('Image recognition fallback:', err);
         // On-device fallback
@@ -252,7 +254,7 @@ export default function App() {
         setActiveFood(recognition.matchedFood);
         setActiveTab('analysis');
         sounds.playAlertPing();
-        setToastMessage(`✓ Recognized: ${recognition.matchedFood.name} (Packaging Color & Shape Match)`);
+        setToastMessage(`✓ Identified: ${recognition.summary}`);
       }
     };
     reader.readAsDataURL(file);
@@ -407,6 +409,9 @@ export default function App() {
               onSelectFood={(food) => {
                 setActiveFood(food);
                 setActiveTab('analysis');
+              }}
+              onFoodDetected={(food) => {
+                setActiveFood(food);
               }}
               parentalSettings={parentalSettings}
               onOpenKidVisualizer={(food) => {

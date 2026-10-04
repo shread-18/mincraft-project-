@@ -31,6 +31,7 @@ import { FuturisticCard } from './ui/FuturisticCard';
 
 interface ARFoodScannerProps {
   onSelectFood: (food: FoodItem) => void;
+  onFoodDetected?: (food: FoodItem) => void;
   parentalSettings: ParentalSettings;
   onOpenKidVisualizer: (food: FoodItem) => void;
 }
@@ -135,6 +136,7 @@ function createFoodFromOCR(text: string): { food: FoodItem; missing: string[] } 
 
 export const ARFoodScanner: React.FC<ARFoodScannerProps> = ({
   onSelectFood,
+  onFoodDetected,
   parentalSettings,
   onOpenKidVisualizer,
 }) => {
@@ -287,7 +289,7 @@ export const ARFoodScanner: React.FC<ARFoodScannerProps> = ({
     setAnalysisError(null);
     setIsScanning(true);
 
-    // 1. Run real multimodal image recognition (Color Fingerprint + Text OCR)
+    // 1. Run real multimodal image recognition (Color Fingerprint + Geometry + Text OCR)
     const recognition = await recognizeFoodFromImage(imageBase64);
 
     try {
@@ -300,6 +302,8 @@ export const ARFoodScanner: React.FC<ARFoodScannerProps> = ({
           queryText: recognition.extractedText 
             ? `Package label OCR: ${recognition.extractedText} (Candidate: ${recognition.matchedFood.name}, Color tone: ${recognition.colorName})`
             : `Packaging scan (Color tone: ${recognition.colorName}, Candidate: ${recognition.matchedFood.name})`,
+          visualMatchId: recognition.matchedFood.id,
+          confidence: recognition.confidence,
         }),
       });
 
@@ -336,45 +340,41 @@ export const ARFoodScanner: React.FC<ARFoodScannerProps> = ({
         };
 
         setSelectedFood(item);
-        onSelectFood(item); // CRITICAL: Propagates scanned food directly to App.tsx
+        onFoodDetected?.(item);
         sounds.playSuccessChime();
         if (item.consumptionSignal === 'GOOD') {
           triggerCelebration();
         } else {
           sounds.playAlertPing();
         }
-        setAnalysisError(
-          json.source === 'gemini-2.5-flash'
-            ? `✓ Identified: ${item.name} via Multimodal AI Vision`
-            : `✓ Identified: ${item.name} via FoodLens Real-Time Vision Engine`
-        );
+        setAnalysisError(`✓ Identified: ${recognition.summary}`);
         return;
       }
 
       // If backend returned without data, use local visual recognition result
       const item = recognition.matchedFood;
       setSelectedFood(item);
-      onSelectFood(item);
+      onFoodDetected?.(item);
       sounds.playSuccessChime();
       if (item.consumptionSignal === 'GOOD') {
         triggerCelebration();
       } else {
         sounds.playAlertPing();
       }
-      setAnalysisError(`✓ Identified: ${item.name} via Computer Vision Packaging Engine`);
+      setAnalysisError(`✓ Identified: ${recognition.summary}`);
     } catch (err: any) {
       console.warn('Backend analysis fallback:', err);
       // Fallback to local image recognition result directly
       const item = recognition.matchedFood;
       setSelectedFood(item);
-      onSelectFood(item);
+      onFoodDetected?.(item);
       sounds.playSuccessChime();
       if (item.consumptionSignal === 'GOOD') {
         triggerCelebration();
       } else {
         sounds.playAlertPing();
       }
-      setAnalysisError(`✓ Identified: ${item.name} (On-Device Color & Text Recognition)`);
+      setAnalysisError(`✓ Identified: ${recognition.summary}`);
     } finally {
       setAiAnalyzing(false);
       setIsScanning(false);
@@ -547,11 +547,34 @@ export const ARFoodScanner: React.FC<ARFoodScannerProps> = ({
               </div>
             </div>
           ) : customImage ? (
-            <img
-              src={customImage}
-              alt="Scanned Food Packaging"
-              className="w-full h-full object-contain bg-slate-950"
-            />
+            <div className="relative w-full h-full">
+              <img
+                src={customImage}
+                alt="Scanned Food Packaging"
+                className="w-full h-full object-contain bg-slate-950"
+              />
+              {/* Bottom Quick Action Overlay for Scanned Photo */}
+              <div className="absolute bottom-5 left-0 right-0 z-30 flex flex-wrap justify-center items-center gap-3 px-4">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setCustomImage(null);
+                    void startCamera();
+                  }}
+                  className="px-4 py-2.5 rounded-xl bg-slate-900/90 hover:bg-slate-800 text-emerald-300 border border-emerald-500/40 text-xs font-mono font-bold tracking-wide shadow-xl backdrop-blur-md flex items-center gap-2 cursor-pointer transition-all hover:scale-105"
+                >
+                  <RefreshCw className="w-3.5 h-3.5" />
+                  <span>Scan Another Package</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => onSelectFood(selectedFood)}
+                  className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-emerald-400 via-teal-400 to-cyan-400 hover:from-emerald-300 hover:to-cyan-300 text-slate-950 text-xs font-mono font-black tracking-wide shadow-[0_0_25px_rgba(0,245,160,0.6)] flex items-center gap-2 cursor-pointer transition-all hover:scale-105"
+                >
+                  <span>Open Full Scientific Report →</span>
+                </button>
+              </div>
+            </div>
           ) : (
             /* Interactive Simulated Food Packaging */
             <div className="relative w-full h-full bg-slate-950 flex items-center justify-center p-6 select-none overflow-hidden">
