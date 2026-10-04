@@ -141,6 +141,7 @@ export const ARFoodScanner: React.FC<ARFoodScannerProps> = ({
   onOpenKidVisualizer,
 }) => {
   const [selectedFood, setSelectedFood] = useState<FoodItem>(OFFICIAL_HACKATHON_DATASET[3]); // Maggi by default
+  const [hasScannedProduct, setHasScannedProduct] = useState(false); // Data is hidden until a real scan is performed
   const [isScanning, setIsScanning] = useState(false);
   const [isCameraActive, setIsCameraActive] = useState(false);
   const [isCameraReady, setIsCameraReady] = useState(false);
@@ -178,6 +179,7 @@ export const ARFoodScanner: React.FC<ARFoodScannerProps> = ({
     setIsScanning(true);
     setTimeout(() => {
       setSelectedFood(food);
+      setHasScannedProduct(true);
       setCustomImage(null);
       setIsScanning(false);
       if (food.consumptionSignal === 'GOOD') {
@@ -340,6 +342,7 @@ export const ARFoodScanner: React.FC<ARFoodScannerProps> = ({
         };
 
         setSelectedFood(item);
+        setHasScannedProduct(true);
         onFoodDetected?.(item);
         sounds.playSuccessChime();
         if (item.consumptionSignal === 'GOOD') {
@@ -354,6 +357,7 @@ export const ARFoodScanner: React.FC<ARFoodScannerProps> = ({
       // If backend returned without data, use local visual recognition result
       const item = recognition.matchedFood;
       setSelectedFood(item);
+      setHasScannedProduct(true);
       onFoodDetected?.(item);
       sounds.playSuccessChime();
       if (item.consumptionSignal === 'GOOD') {
@@ -367,6 +371,7 @@ export const ARFoodScanner: React.FC<ARFoodScannerProps> = ({
       // Fallback to local image recognition result directly
       const item = recognition.matchedFood;
       setSelectedFood(item);
+      setHasScannedProduct(true);
       onFoodDetected?.(item);
       sounds.playSuccessChime();
       if (item.consumptionSignal === 'GOOD') {
@@ -559,6 +564,7 @@ export const ARFoodScanner: React.FC<ARFoodScannerProps> = ({
                   type="button"
                   onClick={() => {
                     setCustomImage(null);
+                    setHasScannedProduct(false);
                     void startCamera();
                   }}
                   className="px-4 py-2.5 rounded-xl bg-slate-900/90 hover:bg-slate-800 text-emerald-300 border border-emerald-500/40 text-xs font-mono font-bold tracking-wide shadow-xl backdrop-blur-md flex items-center gap-2 cursor-pointer transition-all hover:scale-105"
@@ -575,8 +581,56 @@ export const ARFoodScanner: React.FC<ARFoodScannerProps> = ({
                 </button>
               </div>
             </div>
+          ) : !hasScannedProduct ? (
+            /* Cybernetic HUD Standby Screen (Shown BEFORE scanning) */
+            <div className="relative w-full h-full bg-slate-950 flex flex-col items-center justify-center p-6 select-none overflow-hidden text-center">
+              {/* Grid overlay */}
+              <div className="absolute inset-0 bg-[linear-gradient(to_right,rgba(0,245,160,0.04)_1px,transparent_1px),linear-gradient(to_bottom,rgba(0,245,160,0.04)_1px,transparent_1px)] bg-[size:28px_28px] pointer-events-none" />
+
+              {/* Pulsing Radial Aura */}
+              <div className="absolute w-72 h-72 rounded-full blur-3xl opacity-20 bg-emerald-500 animate-pulse pointer-events-none" />
+
+              {/* Center Scanner Standby Box */}
+              <div className="relative z-10 max-w-sm p-6 rounded-3xl bg-slate-900/80 backdrop-blur-xl border border-emerald-500/30 shadow-[0_0_40px_rgba(0,245,160,0.15)] flex flex-col items-center">
+                <div className="w-16 h-16 rounded-2xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 flex items-center justify-center mb-4 shadow-[0_0_20px_rgba(0,245,160,0.25)]">
+                  <Camera className="w-8 h-8 animate-pulse text-emerald-400" />
+                </div>
+
+                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-300 font-tech text-xs uppercase tracking-wider mb-2">
+                  <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping" />
+                  HUD SCANNER READY
+                </div>
+
+                <h3 className="text-lg font-bold font-display text-white mb-2">
+                  Position Package in Camera
+                </h3>
+
+                <p className="text-xs text-slate-300 font-tech leading-relaxed mb-5 max-w-xs">
+                  Scan packaging like Maggi, Bourbon, Coke Can, or any food item via camera or upload to extract verified nutrition data.
+                </p>
+
+                <div className="flex flex-col sm:flex-row gap-2.5 w-full">
+                  <button
+                    type="button"
+                    onClick={() => void startCamera()}
+                    className="flex-1 px-4 py-2.5 rounded-xl bg-gradient-to-r from-emerald-400 via-teal-400 to-cyan-400 text-slate-950 font-display font-black text-xs tracking-wider shadow-[0_0_25px_rgba(0,245,160,0.6)] hover:shadow-[0_0_35px_rgba(0,245,160,0.9)] hover:scale-105 active:scale-95 transition-all flex items-center justify-center gap-2 cursor-pointer"
+                  >
+                    <Camera className="w-4 h-4 text-slate-950" />
+                    <span>OPEN CAMERA</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => fileInputRef.current?.click()}
+                    className="flex-1 px-4 py-2.5 rounded-xl bg-slate-800/90 hover:bg-slate-700 text-cyan-300 border border-cyan-500/30 font-display font-bold text-xs tracking-wider transition-all flex items-center justify-center gap-2 cursor-pointer"
+                  >
+                    <Upload className="w-4 h-4 text-cyan-400" />
+                    <span>UPLOAD PHOTO</span>
+                  </button>
+                </div>
+              </div>
+            </div>
           ) : (
-            /* Interactive Simulated Food Packaging */
+            /* Interactive Simulated Food Packaging (Shown AFTER scanning) */
             <div className="relative w-full h-full bg-slate-950 flex items-center justify-center p-6 select-none overflow-hidden">
               {/* Grid overlay */}
               <div className="absolute inset-0 bg-[linear-gradient(to_right,rgba(0,245,160,0.04)_1px,transparent_1px),linear-gradient(to_bottom,rgba(0,245,160,0.04)_1px,transparent_1px)] bg-[size:28px_28px] pointer-events-none" />
@@ -639,11 +693,14 @@ export const ARFoodScanner: React.FC<ARFoodScannerProps> = ({
                   </p>
                   <button
                     type="button"
-                    onClick={() => void startCamera()}
+                    onClick={() => {
+                      setHasScannedProduct(false);
+                      void startCamera();
+                    }}
                     className="mt-3 px-4 py-2 rounded-xl bg-gradient-to-r from-emerald-500 to-cyan-500 hover:from-emerald-400 hover:to-cyan-400 text-slate-950 font-bold text-xs flex items-center justify-center gap-2 shadow-[0_0_20px_rgba(0,245,160,0.5)] transition-all cursor-pointer mx-auto"
                   >
                     <Camera className="w-4 h-4" />
-                    <span>START REAL CAMERA SCANNER</span>
+                    <span>SCAN ANOTHER PACKAGE</span>
                   </button>
                 </div>
 
@@ -684,8 +741,8 @@ export const ARFoodScanner: React.FC<ARFoodScannerProps> = ({
             </div>
           )}
 
-          {/* Floating AR Holographic Insight Overlays */}
-          {showAROverlay && !isScanning && (
+          {/* Floating AR Holographic Insight Overlays (Shown ONLY after scanning) */}
+          {hasScannedProduct && showAROverlay && !isScanning && (
             <div className="absolute inset-0 pointer-events-auto p-4 sm:p-5 z-20 flex flex-col justify-between">
               {/* Top AR Status Bar */}
               <div className="flex items-center justify-between">
@@ -750,179 +807,266 @@ export const ARFoodScanner: React.FC<ARFoodScannerProps> = ({
 
         {/* Real-time Nutritional Breakdown & Action Panel */}
         <div className="lg:col-span-5 flex flex-col justify-between space-y-4">
-          <FuturisticCard variant="emerald" className="p-5 space-y-4">
-            {/* Header info */}
-            <div className="flex items-start justify-between">
-              <div>
-                <span className="text-[10px] font-tech font-bold text-emerald-400 uppercase tracking-widest">
-                  {selectedFood.brand} · {selectedFood.category}
-                </span>
-                <h3 className="text-xl font-black text-white font-display mt-0.5">
-                  {selectedFood.name}
-                </h3>
-              </div>
-              <span
-                className={`inline-block px-2.5 py-1 rounded-lg text-xs font-black shadow-md ${getNutriGradeColor(
-                  selectedFood.nutriGrade
-                )}`}
-              >
-                Nutri-Grade {selectedFood.nutriGrade}
-              </span>
-            </div>
-
-            {/* Quick Macro Pills */}
-            <div className="grid grid-cols-4 gap-2 text-center">
-              <div className="bg-slate-900/80 p-2.5 rounded-xl border border-slate-800">
-                <span className="text-[10px] text-slate-400 font-tech block uppercase">Calories</span>
-                <span className="text-sm font-black text-white font-display">
-                  {selectedFood.calories}
-                </span>
-                <span className="text-[9px] text-slate-400 font-tech block">kcal</span>
-              </div>
-              <div className="bg-slate-900/80 p-2.5 rounded-xl border border-slate-800">
-                <span className="text-[10px] text-slate-400 font-tech block uppercase">Sugar</span>
-                <span
-                  className={`text-sm font-black font-display ${
-                    selectedFood.sugar > 20 ? 'text-rose-400' : 'text-white'
-                  }`}
-                >
-                  {selectedFood.sugar}g
-                </span>
-                <span className="text-[9px] text-slate-400 font-tech block">
-                  ~{(selectedFood.sugar / 4).toFixed(1)} spoons
-                </span>
-              </div>
-              <div className="bg-slate-900/80 p-2.5 rounded-xl border border-slate-800">
-                <span className="text-[10px] text-slate-400 font-tech block uppercase">Fats</span>
-                <span className="text-sm font-black text-white font-display">
-                  {selectedFood.totalFats}g
-                </span>
-                <span className="text-[9px] text-slate-400 font-tech block">total</span>
-              </div>
-              <div className="bg-slate-900/80 p-2.5 rounded-xl border border-slate-800">
-                <span className="text-[10px] text-slate-400 font-tech block uppercase">Protein</span>
-                <span className="text-sm font-black text-emerald-400 font-display">
-                  {selectedFood.protein}g
-                </span>
-                <span className="text-[9px] text-slate-400 font-tech block">builder</span>
-              </div>
-            </div>
-
-            {/* Continuous Consumption Signal Alert Box */}
-            <div
-              className={`p-3.5 rounded-2xl border text-xs leading-relaxed ${
-                selectedFood.consumptionSignal === 'GOOD'
-                  ? 'bg-emerald-950/40 border-emerald-500/40 text-emerald-200'
-                  : selectedFood.consumptionSignal === 'OK'
-                  ? 'bg-amber-950/40 border-amber-500/40 text-amber-200'
-                  : 'bg-rose-950/40 border-rose-500/40 text-rose-200'
-              }`}
-            >
-              <div className="flex items-center gap-2 font-bold mb-1 font-tech">
-                {selectedFood.consumptionSignal === 'GOOD' ? (
-                  <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
-                ) : (
-                  <AlertTriangle className="w-4 h-4 text-amber-400 shrink-0" />
-                )}
-                <span>
-                  CONTINUOUS SIGNAL:{' '}
-                  <strong className="underline uppercase tracking-wide">
-                    {selectedFood.consumptionSignal}
-                  </strong>
-                </span>
-              </div>
-              <p className="text-[11px] leading-relaxed">
-                <strong>Recommended:</strong> {selectedFood.recommendedAmount} during{' '}
-                {selectedFood.recommendedTime} ({selectedFood.frequency}).
-              </p>
-              <p className="mt-1 text-[11px] text-slate-300">
-                <strong>Excess Warning:</strong> {selectedFood.excessIntakeEffects}.
-              </p>
-            </div>
-
-            {/* Kid Specific Health Hazard Callout */}
-            <div className="bg-slate-900/80 p-3.5 rounded-2xl border border-slate-800">
-              <div className="flex items-center justify-between mb-1.5">
-                <span className="text-xs font-bold font-fun text-slate-200 flex items-center gap-1.5">
-                  🧒 Kid & Minor Suitability
-                </span>
-                <span
-                  className={`text-[9px] font-tech font-bold uppercase px-2 py-0.5 rounded-full ${
-                    selectedFood.kidSuitability.isRecommendedForKids
-                      ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30'
-                      : 'bg-rose-500/20 text-rose-400 border border-rose-500/30'
-                  }`}
-                >
-                  {selectedFood.kidSuitability.isRecommendedForKids
-                    ? 'Safe for Kids'
-                    : 'Not Recommended'}
-                </span>
-              </div>
-              <p className="text-xs text-slate-400">
-                {selectedFood.kidSuitability.kidWarningText}
-              </p>
-
-              <button
-                onClick={() => onOpenKidVisualizer(selectedFood)}
-                className="mt-3 w-full flex items-center justify-center gap-2 py-2 px-3 rounded-xl bg-amber-500/20 hover:bg-amber-500/30 border border-amber-400/40 text-amber-300 font-fun font-bold text-xs transition-all cursor-pointer"
-              >
-                <span>Explore Kids Negative Health Effect Visualizer</span>
-                <ChevronRight className="w-4 h-4" />
-              </button>
-            </div>
-
-            {/* Healthier Alternatives Preview */}
-            {selectedFood.healthierAlternatives.length > 0 && (
-              <div className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <span className="text-xs font-tech font-bold text-slate-300 flex items-center gap-1.5">
-                    <Sparkles className="w-3.5 h-3.5 text-emerald-400" />
-                    Recommended Healthier Alternatives
+          {hasScannedProduct ? (
+            <FuturisticCard variant="emerald" className="p-5 space-y-4">
+              {/* Header info */}
+              <div className="flex items-start justify-between">
+                <div>
+                  <span className="text-[10px] font-tech font-bold text-emerald-400 uppercase tracking-widest">
+                    {selectedFood.brand} · {selectedFood.category}
                   </span>
-                  <span className="text-[10px] font-tech text-emerald-400">Smart Swaps</span>
+                  <h3 className="text-xl font-black text-white font-display mt-0.5">
+                    {selectedFood.name}
+                  </h3>
                 </div>
-
-                {selectedFood.healthierAlternatives.slice(0, 2).map((alt, i) => (
-                  <div
-                    key={i}
-                    className="p-3 bg-slate-900/60 rounded-xl border border-slate-800 flex items-center justify-between"
-                  >
-                    <div>
-                      <div className="flex items-center gap-2">
-                        <span className="font-bold text-xs text-white">
-                          {alt.name}
-                        </span>
-                        <span className="text-[9px] font-tech px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
-                          {alt.badge}
-                        </span>
-                      </div>
-                      <p className="text-[11px] text-slate-400 mt-0.5">
-                        {alt.benefitHighlight}
-                      </p>
-                    </div>
-                    <div className="text-right shrink-0 ml-2">
-                      <span className="text-xs font-tech font-bold text-emerald-400 block">
-                        {alt.calories} kcal
-                      </span>
-                      <span className="text-[10px] font-tech text-slate-400">{alt.sugar}g sugar</span>
-                    </div>
-                  </div>
-                ))}
+                <span
+                  className={`inline-block px-2.5 py-1 rounded-lg text-xs font-black shadow-md ${getNutriGradeColor(
+                    selectedFood.nutriGrade
+                  )}`}
+                >
+                  Nutri-Grade {selectedFood.nutriGrade}
+                </span>
               </div>
-            )}
 
-            {/* View Full Deep Nutritional Report Button */}
-            <GlowButton
-              size="md"
-              variant="primary"
-              onClick={() => onSelectFood(selectedFood)}
-              className="w-full"
-              icon={<ArrowRight className="w-4 h-4" />}
-              iconPosition="right"
-            >
-              Inspect Full Ingredient & Scientific Report
-            </GlowButton>
-          </FuturisticCard>
+              {/* Quick Macro Pills */}
+              <div className="grid grid-cols-4 gap-2 text-center">
+                <div className="bg-slate-900/80 p-2.5 rounded-xl border border-slate-800">
+                  <span className="text-[10px] text-slate-400 font-tech block uppercase">Calories</span>
+                  <span className="text-sm font-black text-white font-display">
+                    {selectedFood.calories}
+                  </span>
+                  <span className="text-[9px] text-slate-400 font-tech block">kcal</span>
+                </div>
+                <div className="bg-slate-900/80 p-2.5 rounded-xl border border-slate-800">
+                  <span className="text-[10px] text-slate-400 font-tech block uppercase">Sugar</span>
+                  <span
+                    className={`text-sm font-black font-display ${
+                      selectedFood.sugar > 20 ? 'text-rose-400' : 'text-white'
+                    }`}
+                  >
+                    {selectedFood.sugar}g
+                  </span>
+                  <span className="text-[9px] text-slate-400 font-tech block">
+                    ~{(selectedFood.sugar / 4).toFixed(1)} spoons
+                  </span>
+                </div>
+                <div className="bg-slate-900/80 p-2.5 rounded-xl border border-slate-800">
+                  <span className="text-[10px] text-slate-400 font-tech block uppercase">Fats</span>
+                  <span className="text-sm font-black text-white font-display">
+                    {selectedFood.totalFats}g
+                  </span>
+                  <span className="text-[9px] text-slate-400 font-tech block">total</span>
+                </div>
+                <div className="bg-slate-900/80 p-2.5 rounded-xl border border-slate-800">
+                  <span className="text-[10px] text-slate-400 font-tech block uppercase">Protein</span>
+                  <span className="text-sm font-black text-emerald-400 font-display">
+                    {selectedFood.protein}g
+                  </span>
+                  <span className="text-[9px] text-slate-400 font-tech block">builder</span>
+                </div>
+              </div>
+
+              {/* Continuous Consumption Signal Alert Box */}
+              <div
+                className={`p-3.5 rounded-2xl border text-xs leading-relaxed ${
+                  selectedFood.consumptionSignal === 'GOOD'
+                    ? 'bg-emerald-950/40 border-emerald-500/40 text-emerald-200'
+                    : selectedFood.consumptionSignal === 'OK'
+                    ? 'bg-amber-950/40 border-amber-500/40 text-amber-200'
+                    : 'bg-rose-950/40 border-rose-500/40 text-rose-200'
+                }`}
+              >
+                <div className="flex items-center gap-2 font-bold mb-1 font-tech">
+                  {selectedFood.consumptionSignal === 'GOOD' ? (
+                    <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+                  ) : (
+                    <AlertTriangle className="w-4 h-4 text-amber-400 shrink-0" />
+                  )}
+                  <span>
+                    CONTINUOUS SIGNAL:{' '}
+                    <strong className="underline uppercase tracking-wide">
+                      {selectedFood.consumptionSignal}
+                    </strong>
+                  </span>
+                </div>
+                <p className="text-[11px] leading-relaxed">
+                  <strong>Recommended:</strong> {selectedFood.recommendedAmount} during{' '}
+                  {selectedFood.recommendedTime} ({selectedFood.frequency}).
+                </p>
+                <p className="mt-1 text-[11px] text-slate-300">
+                  <strong>Excess Warning:</strong> {selectedFood.excessIntakeEffects}.
+                </p>
+              </div>
+
+              {/* Kid Specific Health Hazard Callout */}
+              <div className="bg-slate-900/80 p-3.5 rounded-2xl border border-slate-800">
+                <div className="flex items-center justify-between mb-1.5">
+                  <span className="text-xs font-bold font-fun text-slate-200 flex items-center gap-1.5">
+                    🧒 Kid & Minor Suitability
+                  </span>
+                  <span
+                    className={`text-[9px] font-tech font-bold uppercase px-2 py-0.5 rounded-full ${
+                      selectedFood.kidSuitability.isRecommendedForKids
+                        ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30'
+                        : 'bg-rose-500/20 text-rose-400 border border-rose-500/30'
+                    }`}
+                  >
+                    {selectedFood.kidSuitability.isRecommendedForKids
+                      ? 'Safe for Kids'
+                      : 'Not Recommended'}
+                  </span>
+                </div>
+                <p className="text-xs text-slate-400">
+                  {selectedFood.kidSuitability.kidWarningText}
+                </p>
+
+                <button
+                  onClick={() => onOpenKidVisualizer(selectedFood)}
+                  className="mt-3 w-full flex items-center justify-center gap-2 py-2 px-3 rounded-xl bg-amber-500/20 hover:bg-amber-500/30 border border-amber-400/40 text-amber-300 font-fun font-bold text-xs transition-all cursor-pointer"
+                >
+                  <span>Explore Kids Negative Health Effect Visualizer</span>
+                  <ChevronRight className="w-4 h-4" />
+                </button>
+              </div>
+
+              {/* Healthier Alternatives Preview */}
+              {selectedFood.healthierAlternatives.length > 0 && (
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-tech font-bold text-slate-300 flex items-center gap-1.5">
+                      <Sparkles className="w-3.5 h-3.5 text-emerald-400" />
+                      Recommended Healthier Alternatives
+                    </span>
+                    <span className="text-[10px] font-tech text-emerald-400">Smart Swaps</span>
+                  </div>
+
+                  {selectedFood.healthierAlternatives.slice(0, 2).map((alt, i) => (
+                    <div
+                      key={i}
+                      className="p-3 bg-slate-900/60 rounded-xl border border-slate-800 flex items-center justify-between"
+                    >
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <span className="font-bold text-xs text-white">
+                            {alt.name}
+                          </span>
+                          <span className="text-[9px] font-tech px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+                            {alt.badge}
+                          </span>
+                        </div>
+                        <p className="text-[11px] text-slate-400 mt-0.5">
+                          {alt.benefitHighlight}
+                        </p>
+                      </div>
+                      <div className="text-right shrink-0 ml-2">
+                        <span className="text-xs font-tech font-bold text-emerald-400 block">
+                          {alt.calories} kcal
+                        </span>
+                        <span className="text-[10px] font-tech text-slate-400">{alt.sugar}g sugar</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {/* View Full Deep Nutritional Report Button */}
+              <GlowButton
+                size="md"
+                variant="primary"
+                onClick={() => onSelectFood(selectedFood)}
+                className="w-full"
+                icon={<ArrowRight className="w-4 h-4" />}
+                iconPosition="right"
+              >
+                Inspect Full Ingredient & Scientific Report
+              </GlowButton>
+            </FuturisticCard>
+          ) : (
+            /* Standby State Panel (Nutritional Data is shown ONLY after scanning) */
+            <FuturisticCard variant="neutral" className="p-6 space-y-5">
+              <div className="flex items-center justify-between">
+                <div>
+                  <span className="text-[10px] font-tech font-bold text-slate-400 uppercase tracking-widest">
+                    HUD SENSOR READY
+                  </span>
+                  <h3 className="text-xl font-black text-white font-display mt-0.5">
+                    Packaging Telemetry Standby
+                  </h3>
+                </div>
+                <StatusBadge status="ready" label="AWAITING SCAN" />
+              </div>
+
+              <div className="p-3.5 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-300 text-xs font-tech leading-relaxed flex items-start gap-2.5">
+                <Sparkles className="w-4 h-4 shrink-0 text-emerald-400 mt-0.5" />
+                <span>
+                  <strong>Data is hidden until packaging is scanned:</strong> Point the camera at a product (Maggi, Bourbon, Coke Can, etc.), upload an image, or tap a sample pack below to unlock nutritional diagnostics.
+                </span>
+              </div>
+
+              {/* Standby Placeholder Macro Slots */}
+              <div>
+                <span className="text-[10px] font-tech text-slate-400 uppercase tracking-wider block mb-2">
+                  Nutritional Telemetry Slots
+                </span>
+                <div className="grid grid-cols-4 gap-2 text-center">
+                  <div className="bg-slate-900/60 p-2.5 rounded-xl border border-slate-800/80 border-dashed">
+                    <span className="text-[10px] text-slate-500 font-tech block uppercase">Calories</span>
+                    <span className="text-sm font-black text-slate-400 font-display">--</span>
+                    <span className="text-[9px] text-slate-500 font-tech block">kcal</span>
+                  </div>
+                  <div className="bg-slate-900/60 p-2.5 rounded-xl border border-slate-800/80 border-dashed">
+                    <span className="text-[10px] text-slate-500 font-tech block uppercase">Sugar</span>
+                    <span className="text-sm font-black text-slate-400 font-display">--</span>
+                    <span className="text-[9px] text-slate-500 font-tech block">spoons</span>
+                  </div>
+                  <div className="bg-slate-900/60 p-2.5 rounded-xl border border-slate-800/80 border-dashed">
+                    <span className="text-[10px] text-slate-500 font-tech block uppercase">Fats</span>
+                    <span className="text-sm font-black text-slate-400 font-display">--</span>
+                    <span className="text-[9px] text-slate-500 font-tech block">total</span>
+                  </div>
+                  <div className="bg-slate-900/60 p-2.5 rounded-xl border border-slate-800/80 border-dashed">
+                    <span className="text-[10px] text-slate-500 font-tech block uppercase">Protein</span>
+                    <span className="text-sm font-black text-slate-400 font-display">--</span>
+                    <span className="text-[9px] text-slate-500 font-tech block">builder</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Step Guide */}
+              <div className="space-y-2.5 pt-2 border-t border-slate-800/80">
+                <span className="text-[10px] font-tech text-slate-400 uppercase tracking-wider block">
+                  3-Step Instant Packaging Diagnostics
+                </span>
+                <div className="space-y-2 text-xs font-tech">
+                  <div className="flex items-center gap-3 p-2.5 rounded-xl bg-slate-900/40 border border-slate-800/60 text-slate-300">
+                    <span className="w-5 h-5 rounded-lg bg-emerald-500/20 text-emerald-400 font-bold flex items-center justify-center text-[10px]">1</span>
+                    <span>Scan packaging or upload photo (Maggi, Bourbon, Coke Can, etc.)</span>
+                  </div>
+                  <div className="flex items-center gap-3 p-2.5 rounded-xl bg-slate-900/40 border border-slate-800/60 text-slate-300">
+                    <span className="w-5 h-5 rounded-lg bg-emerald-500/20 text-emerald-400 font-bold flex items-center justify-center text-[10px]">2</span>
+                    <span>Multimodal AI inspects colors, OCR label text & barcode</span>
+                  </div>
+                  <div className="flex items-center gap-3 p-2.5 rounded-xl bg-slate-900/40 border border-slate-800/60 text-slate-300">
+                    <span className="w-5 h-5 rounded-lg bg-emerald-500/20 text-emerald-400 font-bold flex items-center justify-center text-[10px]">3</span>
+                    <span>Full Nutri-Grade, macros & pediatric warnings appear instantly</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Fast CTA */}
+              <div className="pt-2">
+                <GlowButton
+                  size="md"
+                  variant="primary"
+                  onClick={() => void startCamera()}
+                  className="w-full"
+                  icon={<Camera className="w-4 h-4 text-slate-950" />}
+                >
+                  {isCameraActive ? 'Camera Live — Tap Scan to Reveal Data' : 'Activate Live Camera Scanner'}
+                </GlowButton>
+              </div>
+            </FuturisticCard>
+          )}
         </div>
       </div>
 
@@ -944,7 +1088,7 @@ export const ARFoodScanner: React.FC<ARFoodScannerProps> = ({
 
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3">
           {OFFICIAL_HACKATHON_DATASET.map((item) => {
-            const isSelected = selectedFood.id === item.id;
+            const isSelected = hasScannedProduct && selectedFood.id === item.id;
             return (
               <button
                 key={item.id}

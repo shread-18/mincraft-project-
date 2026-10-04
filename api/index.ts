@@ -130,32 +130,34 @@ function getFallbackFoodAnalysis(queryText?: string, visualMatchId?: string) {
     );
   }
   
-  // 2. Specific product keywords and visual color tone fingerprints
+  // 2. Specific product keywords, common typos & packaging signatures
   if (!matched) {
-    if (query.includes('cadbury') || query.includes('silk') || query.includes('dairy milk') || query.includes('chocolate') || query.includes('cocoa') || query.includes('color tone: purple') || query.includes('purple')) {
-      matched = OFFICIAL_HACKATHON_DATASET.find(p => p.id === 'P010'); // Cadbury Dairy Milk
-    } else if (query.includes('paneer') || query.includes('malai') || query.includes('amul') || query.includes('cottage') || query.includes('color tone: white')) {
-      matched = OFFICIAL_HACKATHON_DATASET.find(p => p.id === 'P002'); // Amul Paneer
-    } else if (query.includes('noodle') || query.includes('maggi') || query.includes('instant') || query.includes('masala') || query.includes('tastemaker')) {
-      matched = OFFICIAL_HACKATHON_DATASET.find(p => p.id === 'P004'); // Maggi Noodles
-    } else if (query.includes('sweet') || query.includes('kinder') || query.includes('joy') || query.includes('candy') || query.includes('egg') || query.includes('surprise')) {
+    if (query.includes('maggi') || query.includes('maggie') || query.includes('noodle') || query.includes('noodles') || query.includes('instant') || query.includes('tastemaker') || query.includes('2-minute') || query.includes('2 minute')) {
+      matched = OFFICIAL_HACKATHON_DATASET.find(p => p.id === 'P004'); // Maggi 2-Minute Noodles
+    } else if (query.includes('bourbon') || query.includes('borbon') || query.includes('biscuit') || query.includes('biscuits') || query.includes('creme') || query.includes('color tone: brown')) {
+      matched = OFFICIAL_HACKATHON_DATASET.find(p => p.id === 'P009'); // Bourbon Chocolate Cream Biscuits
+    } else if (query.includes('coke') || query.includes('coca') || query.includes('cola') || query.includes('soda') || query.includes('classic fizz') || query.includes('coke can') || query.includes('soda can') || query.includes('sparkling cola') || (/\bcan\b/i.test(query) && !query.includes('scan') && !query.includes('candidate'))) {
+      matched = OFFICIAL_HACKATHON_DATASET.find(p => p.id === 'P011'); // Sparkling Cola Soda Can
+    } else if (query.includes('kinder') || query.includes('kinderjoy') || (/\bjoy\b/i.test(query) && !query.includes('enjoy')) || (/\begg\b/i.test(query) && !query.includes('veggie')) || query.includes('surprise') || query.includes('ferrero')) {
       matched = OFFICIAL_HACKATHON_DATASET.find(p => p.id === 'P005'); // Kinder Joy
-    } else if (query.includes('drink') || query.includes('cola') || query.includes('soda') || query.includes('coke') || query.includes('coca') || query.includes('color tone: red') || query.includes('red')) {
-      matched = OFFICIAL_HACKATHON_DATASET.find(p => p.id === 'P011'); // Coca-Cola
-    } else if (query.includes('apple') || query.includes('fruit') || query.includes('fresh') || query.includes('gala')) {
-      matched = OFFICIAL_HACKATHON_DATASET.find(p => p.id === 'P012'); // Fresh Apple
-    } else if (query.includes('chip') || query.includes('dorito') || query.includes('nacho') || query.includes('lay') || query.includes('potato') || query.includes('snack') || query.includes('color tone: yellow') || query.includes('yellow')) {
-      matched = OFFICIAL_HACKATHON_DATASET.find(p => p.id === 'P008'); // Lay's / Chips
-    } else if (query.includes('biscuit') || query.includes('bourbon') || query.includes('cookie') || query.includes('britannia') || query.includes('color tone: brown') || query.includes('brown')) {
-      matched = OFFICIAL_HACKATHON_DATASET.find(p => p.id === 'P009'); // Bourbon
-    } else if (query.includes('oat') || query.includes('quaker') || query.includes('porridge') || query.includes('cereal') || query.includes('blue')) {
-      matched = OFFICIAL_HACKATHON_DATASET.find(p => p.id === 'P003'); // Quaker Oats
-    } else if (query.includes('makhana') || query.includes('foxnut') || query.includes('lotus') || query.includes('farmley') || query.includes('color tone: cream') || query.includes('cream')) {
-      matched = OFFICIAL_HACKATHON_DATASET.find(p => p.id === 'P007'); // Roasted Makhana
-    } else if (query.includes('honey') || query.includes('dabur') || query.includes('pure honey') || query.includes('color tone: amber') || query.includes('amber')) {
-      matched = OFFICIAL_HACKATHON_DATASET.find(p => p.id === 'P006'); // Dabur Honey
-    } else if (query.includes('bar') || query.includes('yoga') || query.includes('multigrain') || query.includes('energy bar') || query.includes('protein bar') || query.includes('teal')) {
-      matched = OFFICIAL_HACKATHON_DATASET.find(p => p.id === 'P001'); // Yoga Bar
+    } else if (query.includes('yoga') || query.includes('yogabar') || query.includes('protein bar') || query.includes('protien bar') || query.includes('daily 10g') || query.includes('protien')) {
+      matched = OFFICIAL_HACKATHON_DATASET.find(p => p.id === 'P001'); // Yoga Bar Daily 10g Protein Bar
+    } else if (/\boats?\b/i.test(query) || query.includes('cereal') || query.includes('porridge') || query.includes('chocolate oats')) {
+      matched = OFFICIAL_HACKATHON_DATASET.find(p => p.id === 'P003'); // High Protein Oats Dark Chocolate
+    } else if (query.includes('makhana') || query.includes('mr makhana') || query.includes('foxnut') || query.includes('fox nut') || query.includes('fox nuts') || query.includes('lotus') || query.includes('butter tomato') || query.includes('color tone: cream')) {
+      matched = OFFICIAL_HACKATHON_DATASET.find(p => p.id === 'P007'); // Mr Makhana
+    } else if (query.includes('paneer') || query.includes('malai paneer') || query.includes('milk mist') || query.includes('cottage') || query.includes('color tone: white')) {
+      matched = OFFICIAL_HACKATHON_DATASET.find(p => p.id === 'P002'); // Fresh Malai Paneer
+    } else if (/\blays?\b/i.test(query) || query.includes("lay's") || query.includes('magic masala') || (query.includes('potato') && query.includes('chip')) || query.includes('color tone: yellow')) {
+      matched = OFFICIAL_HACKATHON_DATASET.find(p => p.id === 'P008'); // Lay's Potato Chips
+    } else if (query.includes('honey') || query.includes('dabur') || query.includes('pure honey') || query.includes('color tone: amber')) {
+      matched = OFFICIAL_HACKATHON_DATASET.find(p => p.id === 'P006'); // 100% Pure Natural Honey
+    } else if (query.includes('apple') || query.includes('crisp apple') || query.includes('green apple') || query.includes('orchard') || query.includes('fresh fruit')) {
+      matched = OFFICIAL_HACKATHON_DATASET.find(p => p.id === 'P012'); // Fresh Crisp Green Apple
+    } else if (query.includes('fruit cake') || query.includes('bar cake') || query.includes('vanilla fruit') || (/\bcake\b/i.test(query) && !query.includes('pancake'))) {
+      matched = OFFICIAL_HACKATHON_DATASET.find(p => p.id === 'P010'); // Vanilla Fruit Bar Cake
+    } else if (query.includes('snack pack') || query.includes('whole grain cookie') || /\bcookies?\b/i.test(query)) {
+      matched = OFFICIAL_HACKATHON_DATASET.find(p => p.id === 'P013'); // Whole Grain Cookie Snack Pack
     } else {
       // 3. Brand name match
       matched = OFFICIAL_HACKATHON_DATASET.find(p => query.includes(p.brand.toLowerCase())) || OFFICIAL_HACKATHON_DATASET[3];

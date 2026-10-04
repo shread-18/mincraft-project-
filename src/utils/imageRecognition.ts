@@ -313,75 +313,141 @@ export async function recognizeFoodFromImage(
     }
 
     // 4. Product-Specific Visual Color & Aspect Ratio Signatures
-    const { red, yellow, purple, blue, amber, brown, cream, white, green, orange, teal } = features.colors;
-    const ar = features.aspectRatio;
+    const colors = features.colors || ({} as any);
+    const red = colors.red || 0;
+    const yellow = colors.yellow || 0;
+    const purple = colors.purple || 0;
+    const blue = colors.blue || 0;
+    const amber = colors.amber || 0;
+    const brown = colors.brown || 0;
+    const cream = colors.cream || 0;
+    const white = colors.white || 0;
+    const green = colors.green || 0;
+    const orange = colors.orange || 0;
+    const teal = colors.teal || 0;
+    const ar = features.aspectRatio || 1.0;
 
+    // Specific high-priority product keywords & common user spellings (Safe word boundaries to prevent substring collisions like 'can' matching 'scan')
+    if (item.id === 'P004') { // Maggi / Maggie
+      if (searchString.includes('maggi') || searchString.includes('maggie') || searchString.includes('noodle') || searchString.includes('noodles') || searchString.includes('masala') || searchString.includes('2 minute') || searchString.includes('2-minute') || searchString.includes('tastemaker')) {
+        score += 90;
+        detectedSource = 'ocr-brand-match';
+      }
+    } else if (item.id === 'P009') { // Bourbon / Borbon
+      if (searchString.includes('bourbon') || searchString.includes('borbon') || searchString.includes('biscuit') || searchString.includes('biscuits') || searchString.includes('creme') || searchString.includes('britannia') || searchString.includes('bourbon chocolate')) {
+        score += 90;
+        detectedSource = 'ocr-brand-match';
+      }
+    } else if (item.id === 'P011') { // Coke can / Cola / Sparkling
+      if (searchString.includes('coke') || searchString.includes('cola') || searchString.includes('coca') || searchString.includes('classic fizz') || searchString.includes('coke can') || searchString.includes('soda can') || searchString.includes('cola can') || searchString.includes('sparkling cola') || (/\bcan\b/i.test(searchString) && !searchString.includes('scan') && !searchString.includes('candidate'))) {
+        score += 90;
+        detectedSource = 'ocr-brand-match';
+      }
+    } else if (item.id === 'P005') { // Kinder Joy
+      if (searchString.includes('kinder') || searchString.includes('kinderjoy') || (/\bjoy\b/i.test(searchString) && !searchString.includes('enjoy')) || (/\begg\b/i.test(searchString) && !searchString.includes('veggie')) || searchString.includes('surprise toy') || searchString.includes('ferrero')) {
+        score += 90;
+        detectedSource = 'ocr-brand-match';
+      }
+    } else if (item.id === 'P001') { // Yoga Protein Bar
+      if (searchString.includes('yoga') || searchString.includes('yogabar') || searchString.includes('protein bar') || searchString.includes('daily 10g') || searchString.includes('protien') || (searchString.includes('protein') && searchString.includes('bar'))) {
+        score += 90;
+        detectedSource = 'ocr-brand-match';
+      }
+    } else if (item.id === 'P003') { // Oats
+      if (/\boats?\b/i.test(searchString) || searchString.includes('cereal') || searchString.includes('porridge') || searchString.includes('protein oats') || searchString.includes('chocolate oats')) {
+        score += 90;
+        detectedSource = 'ocr-brand-match';
+      }
+    } else if (item.id === 'P007') { // Makhana
+      if (searchString.includes('makhana') || searchString.includes('mr makhana') || searchString.includes('foxnut') || searchString.includes('fox nut') || searchString.includes('fox nuts') || searchString.includes('butter tomato') || searchString.includes('lotus seeds')) {
+        score += 90;
+        detectedSource = 'ocr-brand-match';
+      }
+    } else if (item.id === 'P002') { // Paneer
+      if (searchString.includes('paneer') || searchString.includes('malai paneer') || searchString.includes('milk mist') || searchString.includes('cottage') || searchString.includes('dairy paneer')) {
+        score += 90;
+        detectedSource = 'ocr-brand-match';
+      }
+    } else if (item.id === 'P008') { // Lay's
+      if (/\blays?\b/i.test(searchString) || searchString.includes("lay's") || searchString.includes('magic masala') || (searchString.includes('potato') && searchString.includes('chip'))) {
+        score += 90;
+        detectedSource = 'ocr-brand-match';
+      }
+    } else if (item.id === 'P006') { // Honey
+      if (searchString.includes('honey') || searchString.includes('dabur') || searchString.includes('pure honey') || searchString.includes('natural honey')) {
+        score += 90;
+        detectedSource = 'ocr-brand-match';
+      }
+    } else if (item.id === 'P012') { // Apple
+      if (searchString.includes('apple') || searchString.includes('crisp apple') || searchString.includes('green apple') || searchString.includes('fresh fruit') || searchString.includes('orchard')) {
+        score += 90;
+        detectedSource = 'ocr-brand-match';
+      }
+    } else if (item.id === 'P010') { // Cake
+      if (searchString.includes('fruit cake') || searchString.includes('bar cake') || searchString.includes('vanilla fruit') || (/\bcake\b/i.test(searchString) && !searchString.includes('pancake'))) {
+        score += 90;
+        detectedSource = 'ocr-brand-match';
+      }
+    } else if (item.id === 'P013') { // Cookie
+      if (searchString.includes('snack pack') || searchString.includes('whole grain cookie') || /\bcookies?\b/i.test(searchString)) {
+        score += 90;
+        detectedSource = 'ocr-brand-match';
+      }
+    }
+
+    // Precise, Disjoint Visual Packaging Signatures
     if (item.id === 'P011') {
-      // Sparkling Cola Soda Can: Bold Red Can, low green, tall cylinder
-      if (red > 0.14 && green < 0.06) score += red * 95;
-      if (ar < 0.95) score += 20; // Tall vertical can
-      if (searchString.includes('cola') || searchString.includes('coke') || searchString.includes('soda') || searchString.includes('fizz') || searchString.includes('can')) score += 45;
+      // Sparkling Cola Soda Can: Crimson Red, low yellow, tall can
+      if (red > 0.12 && yellow < 0.08) score += red * 100;
+      if (ar < 0.95) score += 25; // Can shape
+    } else if (item.id === 'P009') {
+      // Bourbon: Dark Cocoa Brown, horizontal biscuit
+      if (brown > 0.09) score += brown * 110;
+      if (ar > 1.35) score += 30; // Horizontal biscuit pack
+    } else if (item.id === 'P004') {
+      // Maggi: Dual Yellow + Red banner
+      if (yellow > 0.10 && red > 0.05) score += yellow * 70 + red * 70 + 40;
+      else if (yellow > 0.15) score += yellow * 45;
+    } else if (item.id === 'P005') {
+      // Kinder Joy: Dual White + Orange/Blue egg
+      if (white > 0.12 && (orange > 0.05 || blue > 0.05)) {
+        score += white * 60 + Math.max(orange, blue) * 70 + 40;
+      }
+    } else if (item.id === 'P001') {
+      // Yoga Bar: Wide horizontal wrapper + Teal/Violet
+      if (ar > 1.45) score += 40;
+      score += (teal * 80) + (purple * 60) + (blue * 50);
+    } else if (item.id === 'P003') {
+      // Oats: Dark chocolate / Navy pouch, vertical
+      if (ar < 1.35 && (blue > 0.08 || brown > 0.08)) {
+        score += Math.max(blue, brown) * 75;
+      }
+    } else if (item.id === 'P007') {
+      // Makhana: Cream/Ivory pouch + tomato red seasoning
+      if (cream > 0.10) score += cream * 80 + red * 40;
+    } else if (item.id === 'P002') {
+      // Paneer: Bright White box
+      if (white > 0.20 && orange < 0.05 && yellow < 0.08) score += white * 90;
     } else if (item.id === 'P008') {
-      // Lay's India's Magic Masala / Classic Salted: Signature Blue or Yellow pack
-      if (blue > 0.12 || yellow > 0.12) score += Math.max(blue, yellow) * 85;
-      if (searchString.includes('lay') || searchString.includes('chip') || searchString.includes('potato') || searchString.includes('masala')) score += 45;
-    } else if (item.id === 'P010') {
-      // Vanilla Fruit Bar Cake: Golden Yellow / Orange bakery wrapper
-      if (yellow > 0.12 || orange > 0.10) score += Math.max(yellow, orange) * 85;
-      if (searchString.includes('cake') || searchString.includes('fruit') || searchString.includes('bar cake') || searchString.includes('vanilla')) score += 45;
+      // Lay's: Yellow or Blue bag
+      if (yellow > 0.15 || (blue > 0.15 && searchString.includes('lay'))) score += Math.max(yellow, blue) * 80;
     } else if (item.id === 'P006') {
       // 100% Pure Natural Honey: Amber Golden Liquid jar
       if (amber > 0.12) score += amber * 105;
-      if (searchString.includes('honey') || searchString.includes('pure') || searchString.includes('dabur')) score += 45;
-    } else if (item.id === 'P009') {
-      // Bourbon Chocolate Cream Biscuits: Deep Chocolate Brown, horizontal biscuit pack
-      if (brown > 0.12) score += brown * 105;
-      if (ar > 1.35) score += 25; // Long biscuit package
-      if (searchString.includes('bourbon') || searchString.includes('biscuit') || searchString.includes('cookie') || searchString.includes('cream')) score += 45;
-    } else if (item.id === 'P002') {
-      // Fresh Malai Paneer: Bright White box with dairy accents
-      if (white > 0.22) score += white * 85;
-      if (searchString.includes('paneer') || searchString.includes('malai') || searchString.includes('milk mist') || searchString.includes('dairy')) score += 45;
-    } else if (item.id === 'P007') {
-      // Mr Makhana Roasted in Olive Oil: Ivory / Cream pouch with tomato red accents
-      if (cream > 0.12 || (cream > 0.08 && red > 0.08)) score += cream * 75 + red * 40;
-      if (searchString.includes('makhana') || searchString.includes('foxnut') || searchString.includes('tomato')) score += 45;
-    } else if (item.id === 'P004') {
-      // Maggi 2-Minute Noodles: Distinctive Yellow bag + Bold Red Nestle banner
-      if (yellow > 0.12 && red > 0.06) {
-        score += yellow * 65 + red * 65 + 40; // Dual-color synergy
-      } else {
-        score += yellow * 35 + red * 25;
-      }
-      if (searchString.includes('maggi') || searchString.includes('noodle') || searchString.includes('2-minute')) score += 45;
-    } else if (item.id === 'P005') {
-      // Kinder Joy with Surprise (Blue Edition): Dual Split Egg: Crisp White + Orange / Blue
-      if (white > 0.14 && (orange > 0.06 || blue > 0.06)) {
-        score += white * 55 + Math.max(orange, blue) * 65 + 40;
-      } else {
-        score += white * 30 + orange * 30;
-      }
-      if (searchString.includes('kinder') || searchString.includes('joy') || searchString.includes('surprise') || searchString.includes('toy')) score += 45;
-    } else if (item.id === 'P003') {
-      // High Protein Oats Dark Chocolate: Dark Chocolate Cocoa / Blue accents
-      if (brown > 0.10 || blue > 0.10) score += Math.max(brown, blue) * 85;
-      if (searchString.includes('oat') || searchString.includes('oats') || searchString.includes('chocolate') || searchString.includes('protein oats')) score += 45;
-    } else if (item.id === 'P001') {
-      // Yoga Bar Daily 10g Protein Bar: Elongated wrapper + Teal / Blue / Violet energy packaging
-      score += teal * 85 + blue * 50 + purple * 50;
-      if (ar > 1.45) score += 35; // Distinctive snack bar wrapper aspect ratio
-      if (searchString.includes('yoga') || searchString.includes('daily 10g') || searchString.includes('protein bar')) score += 45;
     } else if (item.id === 'P012') {
       // Fresh Crisp Green Apple: Crisp Green skin, round fruit
       if (green > 0.10) score += green * 95;
       else if (red > 0.08 && green > 0.05) score += red * 50 + green * 50 + 30;
       if (ar > 0.85 && ar < 1.25) score += 20; // Round fruit
-      if (searchString.includes('apple') || searchString.includes('crisp') || searchString.includes('green apple') || searchString.includes('orchard')) score += 45;
+    } else if (item.id === 'P010') {
+      // Vanilla Fruit Bar Cake: Golden Yellow / Orange bakery wrapper
+      if (yellow > 0.12 || orange > 0.10) score += Math.max(yellow, orange) * 80;
     } else if (item.id === 'P013') {
       // Whole Grain Cookie Snack Pack: Wheat Golden Brown
       if (brown > 0.10 || yellow > 0.10) score += Math.max(brown, yellow) * 75;
-      if (searchString.includes('cookie') || searchString.includes('whole grain') || searchString.includes('snack pack')) score += 45;
     }
+
+    if (isNaN(score)) score = 0;
 
     if (score > highestScore) {
       highestScore = score;
