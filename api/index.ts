@@ -2,7 +2,7 @@ import express from 'express';
 import { GoogleGenAI } from '@google/genai';
 import dotenv from 'dotenv';
 import path from 'path';
-import { OFFICIAL_HACKATHON_DATASET } from './_dataset';
+import { OFFICIAL_HACKATHON_DATASET } from './_dataset.js';
 
 // Load environment variables for local testing; on Vercel, process.env is pre-populated
 for (const envFile of ['.env.local', '.env']) {
